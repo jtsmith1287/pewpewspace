@@ -13,7 +13,7 @@ from random import choice
 from spaceship import SpaceShip,Fireball,Missile
 from passive import ScrollingBackground,Passive,Background,HealthBar
 from enemy import Drone,Enemy,EnemyFireball,Boss,Warship,Bomber
-from powerup import PowerUp,Wrench,Bullet,MissileReload
+from powerup import PowerUp,Wrench,Bullet,MissileReload,GunUpgrade
 from animation import Animation
 from sounds import sfx
 from random import randint
@@ -105,7 +105,7 @@ class Game:
                 spwn["spawn_counter"] += 1
 
         if spwn["enemy_killed"] >= spwn["max_enemies"]+(
-                                5+self.level*3) and (spwn["boss_out"] == False):
+                5+self.level*3) and (spwn["boss_out"] == False):
             sfx.stab.play()
             self.boss = Boss(self.player.exp, self.level)
             self.boss.rect.midbottom = (self.screensize[0]/2, 0)
@@ -138,6 +138,9 @@ class Game:
                     new_powerup.rect.center = enemy.rect.center
                 elif chance == 3:
                     new_powerup = MissileReload()
+                    new_powerup.rect.center = enemy.rect.center
+                elif chance == 4:
+                    new_powerup = GunUpgrade()
                     new_powerup.rect.center = enemy.rect.center
                 enemy.die(sfx.muffled_explosion)
                 break

@@ -40,7 +40,9 @@ class SpaceShip(pygame.sprite.Sprite):
         self.armor = {"T": 3, "M": 3} # T = Total, M = Max
         self.guns = 1
         self.bonus = {"reload_speed": {
-                        "steps": [2,0], "boost": 4, "duration": [60*15, 0]},
+                          "steps": [2,0], "boost": 4, "duration": [60*15, 0]},
+                      "gun_upgrade" : {
+                          "duration": [60*15, 0]},
                       }
         self.ranks = {"remaining": 0,
                       "hammer": 0,
@@ -140,11 +142,6 @@ class SpaceShip(pygame.sprite.Sprite):
         if self.shooting and self.reload_time >= reload_speed:
             self.shoot()
             self.reload_time = 0
-        if rs["steps"][1] > 0:
-            if rs["duration"][1] > 0:
-                rs["duration"][1] -= 1
-            else:
-                rs["steps"][1] = 0
 
     def construction (self, time_passed):
 
@@ -168,6 +165,23 @@ class SpaceShip(pygame.sprite.Sprite):
         except TypeError:
             pass
 
+    def manageBonuses(self, bonus):
+
+        rs = bonus["reload_speed"]
+        gu = bonus["gun_upgrade"]
+
+        if rs["steps"][1] > 0:
+            if rs["duration"][1] > 0:
+                rs["duration"][1] -= 1
+            else:
+                rs["steps"][1] = 0
+        if gu["duration"][1]:
+            if gu["duration"][1] > 0:
+                gu["duration"][1] -= 1
+            else:
+                gu["duration"][1] = 0
+                self.guns -= 1
+
     def update (self, time_passed):
 
         tp = time_passed
@@ -180,6 +194,7 @@ class SpaceShip(pygame.sprite.Sprite):
                 self.rect.move_ip(-self.speed*tp, 0)
             if "right" in self.moving and (self.rect.right < self.screen_ref[0]):
                 self.rect.move_ip(self.speed*tp, 0)
+        self.manageBonuses(self.bonus)
         self.shotCheck()
         self.damageCheck()
         self.construction(time_passed)

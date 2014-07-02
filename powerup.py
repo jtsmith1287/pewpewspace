@@ -1,3 +1,4 @@
+
 import pygame
 from random import randint
 from images import *
@@ -83,5 +84,28 @@ class MissileReload (PowerUp):
         else:
             self.kill()
 
+class GunUpgrade (PowerUp):
+
+    def __init__ (self):
+        pygame.sprite.Sprite.__init__ (self, PowerUp.container)
+
+        self.image = BULLET_IMAGE
+        self.rect  = self.image.get_rect()
+        self.speed = randint(50, 300)
+
+    def effect (self, player):
+
+        gu = player.bonus["gun_upgrade"]
+        if player.guns < 3:
+          player.guns += 1
+          gu["duration"][1] = gu["duration"][0]
+        player.exp += 5
+
+    def update (self, time_passed):
+
+        if self.rect.top < 1000:
+            self.rect.move_ip(0, (self.speed * time_passed))
+        else:
+            self.kill()
 
 
