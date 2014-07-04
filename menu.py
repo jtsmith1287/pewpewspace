@@ -7,6 +7,7 @@ Created on Jan 23, 2013
 import pygame
 from pygame.locals import *
 from images import *
+from sounds import sfx
 
 ####################
 # BASIC BLANK MENU #
@@ -14,8 +15,8 @@ from images import *
 class Menu (pygame.sprite.Sprite):
 
     container = pygame.sprite.Group()
-    font = pygame.font.SysFont(pygame.font.get_default_font(), 40)
-    sfont = pygame.font.SysFont(pygame.font.get_default_font(), 15)
+    font = pygame.font.Font("GearsOfPeace.ttf", 20)
+    sfont = pygame.font.Font("GearsOfPeace.ttf", 10)
 
     def __init__ (self):
         pygame.sprite.Sprite.__init__ (self, self.container)
@@ -44,6 +45,7 @@ class Menu (pygame.sprite.Sprite):
             for button in self.button_list:
                 if button.checkPressed(pygame.mouse.get_pos()):
                     self.pressed_button = button
+                    sfx.button_down_press.play()
         else:
             if self.pressed_button:
                 self.pressed_button.unpress(pygame.mouse.get_pos())
@@ -138,12 +140,16 @@ class Slider (Button):
 
 
 class ButtonText (pygame.sprite.Sprite):
+
     def __init__ (self, surface, button, menu):
         pygame.sprite.Sprite.__init__(self, menu.__dict__["text"])
         self.image = surface
         self.rect = self.image.get_rect()
         self.rect.center = button.rect.center
+
+
 class Label (pygame.sprite.Sprite):
+
     def __init__ (self, surface, position, menu):
         pygame.sprite.Sprite.__init__(self, menu.__dict__["text"])
         self.image = surface
@@ -173,12 +179,9 @@ class MainMenu (Menu):
         surface = self.plainText("Quit Game")
         b.append(QuitButton((BUTT_WIDE, BUTT_WIDE_PRES),
                     (self.rect.center[0], self.rect.top+100), self, surface))
-        surface = self.plainText("I'm Broken")
-        next_pos = (b[0].rect.center[0], b[0].rect.bottom + spacer)
-        b.append(OptionButton((BUTT_WIDE, BUTT_WIDE_PRES),
-                              next_pos, self, surface))
+
         surface = self.plainText("Upgrades")
-        next_pos = (b[1].rect.center[0], b[1].rect.bottom + spacer)
+        next_pos = (b[0].rect.center[0], b[0].rect.bottom + spacer)
         b.append(UpgradeButton((BUTT_WIDE, BUTT_WIDE_PRES),
                               next_pos, self, surface))
 
@@ -307,6 +310,7 @@ class HammerButton (Button):
         ranks = player.ranks
         current_rank_line = ranks["hammer"] % 4
         if ranks["remaining"] > 0 and ranks["hammer"] < 16:
+            sfx.success.play()
             if current_rank_line == 0:            # Armor Plating Increase
                 player.damage_res -= 0.1
                 if (8 - ranks["hammer"]) < 2:
@@ -342,6 +346,7 @@ class SabreButton (Button):
         ranks = player.ranks
         current_rank_line = ranks["sabre"] % 4
         if ranks["remaining"] > 0 and ranks["sabre"] < 11:
+            sfx.success.play()
             if current_rank_line == 0:         # Reload Speed
                 player.reload_speed -= 1
             elif current_rank_line == 1:       # Player Speed
@@ -378,6 +383,7 @@ class ScorpionButton (Button):
         ranks = player.ranks
         current_rank_line = ranks["scorpion"] % 3
         if ranks["remaining"] > 0 and ranks["scorpion"] < 12:
+            sfx.success.play()
             if current_rank_line == 0:           # Player Damage
                 player.damage += 0.1
                 if (8 - ranks["scorpion"]) < 3:
@@ -412,20 +418,20 @@ class ForgeButton (Button):
 
         player = Menu.game.player
         ranks = player.ranks
-        current_rank_line = ranks["forge"] % 1
-        if ranks["remaining"] > 0 and ranks["forge"] < 4:
+        current_rank_line = ranks["forge"] % 2
+        if ranks["remaining"] > 0 and ranks["forge"] < 8:
+            sfx.success.play()
             if current_rank_line == 0:          # Missile reload timer
-                print player.missile_timer
                 if player.missile_timer[0] == 30:
                     player.missile_timer[0] = 15
                 else:
                     player.missile_timer[0] -= 10
+            elif current_rank_line == 1:
+                player.armor["M"] += 1
+                player.armor["T"] += 1
                 
             ranks["remaining"] -= 1
             ranks["forge"] += 1
-                
-
-        print ("Missile Timer %s\n" %(player.missile_timer[0]))
 
         # Refresh the menu
         self.menu.widgets = pygame.sprite.Group()
@@ -475,7 +481,11 @@ RANK_DESC = {"hammer": ["Increase armor plating to 110%",
                          "Missile speed to 154%",
                          "Upgrade line at maximum!"],
             "forge": ["Missile construction speed to 50 seconds",
+                      "+1 Armor",
                       "Missile construction speed to 40 seconds",
+                      "+1 Armor",
                       "Missile construction speed to 30 seconds",
+                      "+1 Armor",
                       "Missile construction speed to 15 seconds",
+                      "+1 Armor",
                       "Upgrade line at maximum!"]}                         

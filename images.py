@@ -16,9 +16,20 @@ else:
 # Enemies
 BOSS_IMAGE     = pygame.image.load(p+"boss.png").convert_alpha()
 DRONE_IMAGE    = pygame.image.load(p+"enemy.png").convert_alpha()
+DRONE_IMAGE_2  = pygame.image.load(p+"enemy_2.png").convert_alpha()
+DRONE_IMAGE_3  = pygame.image.load(p+"enemy_3.png").convert_alpha()
 BOMBER_IMAGE   = pygame.image.load(p+"bomber.png").convert_alpha()
 WARSHIP_IMAGE  = pygame.image.load(p+"warship.png").convert_alpha() 
 FIREBALL_IMAGE = pygame.image.load(p+"fireball.png").convert_alpha()
+
+# Enemies @ "next level"
+BOSS_IMAGE_n     = pygame.image.load(p+"boss_n.png").convert_alpha()
+DRONE_IMAGE_n    = pygame.image.load(p+"enemy_n.png").convert_alpha()
+DRONE_IMAGE_2_n  = pygame.image.load(p+"enemy_2_n.png").convert_alpha()
+DRONE_IMAGE_3_n  = pygame.image.load(p+"enemy_3_n.png").convert_alpha()
+BOMBER_IMAGE_n   = pygame.image.load(p+"bomber_n.png").convert_alpha()
+WARSHIP_IMAGE_n  = pygame.image.load(p+"warship_n.png").convert_alpha() 
+FIREBALL_IMAGE_n = pygame.image.load(p+"fireball_n.png").convert_alpha()
 
 # Passives
 SMOKE_IMAGE    = pygame.image.load(p+"smoke.png").convert_alpha()
@@ -35,7 +46,7 @@ BULLET_IMAGE   = pygame.image.load(p+"bullet.png").convert_alpha()
 WRENCH_IMAGE   = pygame.image.load(p+"wrench.png").convert_alpha()
 
 # Animated images
-MISSILE_IMAGE  = ss(p+"missile.png").images_at([(0,0,12,30), (13,0,8,30)])
+MISSILE_IMAGE  = ss(p+"missile.png").images_at([(0,0,13,30), (13,0,8,30)])
 WARP_IMAGE     = ss(p+"warp.png", (40,40), 2,5).images_at()
 SPARKS1_IMAGE   = ss(p+"sparks.png", (50,50), 4,4).images_at()
 SPARKS2_IMAGE   = ss(p+"sparks.png", (50,50), 4,4).images_at()

@@ -38,10 +38,13 @@ class Enemy (pygame.sprite.Sprite):
 
 class Drone (Enemy):
 
-    def __init__ (self, size, player):
+    def __init__ (self, size, player ,level):
         pygame.sprite.Sprite.__init__ (self, Enemy.container)
 
-        self.image = DRONE_IMAGE
+        if level < 10:
+            self.image = choice([DRONE_IMAGE, DRONE_IMAGE_2, DRONE_IMAGE_3])
+        else:
+            self.image = choice([DRONE_IMAGE_n, DRONE_IMAGE_2_n, DRONE_IMAGE_3_n])
         self.rect = self.image.get_rect()
         self.rect.center = (randint((0+150),(size[0]-150)),
                             randint((0+50),(size[1]-500)))
@@ -52,7 +55,7 @@ class Drone (Enemy):
         self.the_enemy = player
 
         self.armor = {"T": 1.2, "M": 1.2} # T = Total, M = Max
-        self.speed = 225
+        self.speed = randint(150, 300)
         self.reload_speed = randint(12, 30)
         self.reload_time = self.reload_speed
 
@@ -63,6 +66,7 @@ class Drone (Enemy):
         EnemyFireball.container.add(bullet)
         bullet.angle = math.pi*2
         bullet.rect.midtop = self.rect.midbottom
+        sfx.enemy_shot.play()
 
     def move (self):
         """ Moves self on a vector at self.angle. """
@@ -106,10 +110,13 @@ class Drone (Enemy):
 
 class Bomber (Enemy):
 
-    def __init__ (self, size, player):
+    def __init__ (self, size, player, level):
         pygame.sprite.Sprite.__init__ (self, Enemy.container)
 
-        self.image = BOMBER_IMAGE
+        if level < 10:
+            self.image = BOMBER_IMAGE
+        else:
+            self.image = BOMBER_IMAGE_n
         self.rect = self.image.get_rect()
         self.rect.center = (randint((0+30),(size[0]-30)), 0)
         self.radias = ((self.rect.width/2 + self.rect.height/2)/2)
@@ -119,7 +126,7 @@ class Bomber (Enemy):
         diff = (self.destination[0]-self.rect.center[0],
                 self.destination[1]-self.rect.center[1])
         self.angle = math.atan2(diff[0], diff[1])
-        self.reload_speed = [75, 12, 6] #Interval,delay,shots per burst
+        self.reload_speed = [75, 20, 5] #Interval,delay,shots per burst
         self.reload_time = [0, 12, 0]
         self.armor = {"T": 3, "M": 3} # T = Total, M = Max
         self.disabled = False
@@ -138,6 +145,7 @@ class Bomber (Enemy):
         Fireball.container.remove(bullet)
         EnemyFireball.container.add(bullet)
         bullet.rect.center = self.rect.center
+        sfx.enemy_shot.play()
 
     def update (self, time_passed):
 
@@ -169,20 +177,23 @@ class Bomber (Enemy):
 
 class Warship (Enemy):
 
-    def __init__ (self, size, player):
+    def __init__ (self, size, player, level):
         pygame.sprite.Sprite.__init__ (self, Enemy.container)
 
-        self.image = WARSHIP_IMAGE
+        if level < 10:
+            self.image = WARSHIP_IMAGE
+        else:
+            self.image = WARSHIP_IMAGE_n
         self.rect = self.image.get_rect()
         self.rect.midbottom = (randint(30,size[0]-30), 0)
         self.radias = ((self.rect.width/2 + self.rect.height/2)/2)
         self.direction = 1
         self.invincible = False
         self.the_enemy = player
-        self.armor = {"T": 10, "M": 10} # T = Total, M = Max
+        self.armor = {"T": 8, "M": 8} # T = Total, M = Max
         self.disabled = False
         self.speed = 75
-        self.reload_speed = int(60 * 2.5)
+        self.reload_speed = int(60 * 3)
         self.reload_time = self.reload_speed
         self.gun_sep = self.rect.height/6
 
@@ -191,7 +202,7 @@ class Warship (Enemy):
         curr_gun = 0
         topleft = self.rect.topleft
         topright = self.rect.topright
-        for shot in xrange(6):
+        for shot in xrange(4):
             bullet = Fireball(FIREBALL_IMAGE, 325)
             Fireball.container.remove(bullet); EnemyFireball.container.add(bullet)
             if direction == "left":
@@ -201,6 +212,7 @@ class Warship (Enemy):
                 bullet.rect.center = (topright[0], topright[1]+curr_gun)
                 bullet.angle = (math.pi*2) * 0.25
             curr_gun += self.gun_sep
+        sfx.warship_shot.play()
 
     def update (self, time_passed):
 
@@ -224,7 +236,10 @@ class Boss (Enemy):
     def __init__ (self, power, level, image="boss.png"):
         pygame.sprite.Sprite.__init__(self, self.container)
 
-        self.image = BOSS_IMAGE
+        if level < 10:
+            self.image = BOSS_IMAGE
+        else:
+            self.image = BOSS_IMAGE_n
         self.rect  = self.image.get_rect()
         self.direction = 1
         self.radias = int((self.rect.width/2.3) + (self.rect.height/2.3)/2)
@@ -269,7 +284,7 @@ class Boss (Enemy):
         else:
             if self.invincible:
                 self.invincible = False
-            chance = randint(1, 150-(self.level*3))
+            chance = randint(1, 100-(self.level*2))
             if chance == 7:
                 self.shoot(randint(5,(15+self.level)), time_passed)
             if chance < 5 and self.moving == None:

@@ -4,11 +4,14 @@ Created on Jan 7, 2013
 @author: Justin
 '''
 
+print "Importing assets..."
 import pygame,sys
+pygame.mixer.pre_init(22050,-16, 2, 256)
 pygame.init() # TODO: Catch exceptions for load failures
 screen = pygame.display.set_mode((800,900))
 
 from pygame.locals import *
+
 from random import choice
 from spaceship import SpaceShip,Fireball,Missile
 from passive import ScrollingBackground,Passive,Background,HealthBar
@@ -16,9 +19,14 @@ from enemy import Drone,Enemy,EnemyFireball,Boss,Warship,Bomber
 from powerup import PowerUp,Wrench,Bullet,MissileReload
 from animation import Animation
 from sounds import sfx
+
 from random import randint
 from images import *
+
 from menu import MainMenu
+print "Assets imported"
+
+
 
 class Game:
 
@@ -31,10 +39,10 @@ class Game:
         self.clock        = pygame.time.Clock()
         self.level        = 1
         self.boss         = None
-        self.font      = pygame.font.SysFont(pygame.font.get_default_font(), 20)
-        self.med_font = pygame.font.SysFont(pygame.font.get_default_font(), 50)
-        self.big_font = pygame.font.SysFont(pygame.font.get_default_font(), 100)
-        self.notify = {"msg": None, "timer": [60*3, 0]}
+        self.font         = pygame.font.Font("GearsOfPeace.ttf", 10)
+        self.med_font     = pygame.font.Font("GearsOfPeace.ttf", 40)
+        self.big_font     = pygame.font.Font("GearsOfPeace.ttf", 60)
+        self.notify       = {"msg": None, "timer": [60*3, 0]}
         self.spawner      = {"max_enemies": 2,
                              "enemy_killed": 0,
                              "spawn_delay": (60 * 1.0),
@@ -89,12 +97,16 @@ class Game:
         spwn = self.spawner
         if spwn["spawn_counter"] >= spwn["spawn_delay"]:
             if len(Enemy.container) < spwn["max_enemies"]:
-                if self.level > 2:
-                    enemy = choice([Drone, Warship])(self.screensize, self.player)
-                elif self.level > 5:
-                    enemy = choice([Drone, Warship, Bomber])(self.screensize, self.player)
+                if self.level -3 in range(3):
+                    enemy = choice([Drone, Warship])(self.screensize,
+                                                     self.player,
+                                                     self.level)
+                elif self.level > 6:
+                    enemy = choice([Drone, Warship, Bomber])(self.screensize, 
+                                                             self.player, 
+                                                             self.level)
                 else:
-                    enemy = Drone(self.screensize, self.player)
+                    enemy = Drone(self.screensize, self.player, self.level)
                 if self.level > 10:
                     enemy.armor["T"] *= 3
                     enemy.armor["M"] *= 3
@@ -175,6 +187,7 @@ class Game:
                     text = "New Upgrades!"
                     self.notify["msg"] = self.med_font.render(text, True, (255,255,255))
                     break
+                projectile.explode()
         # Check if the player has grabbed a PowerUp
         ding = collide(PowerUp.container, self.player.container, True, False)
         if ding:
@@ -192,25 +205,28 @@ class Game:
             surface = fr(text, True, (255,255,255))
             self.screen.blit(surface, (350, self.screensize[1]/2))
         else:
-            text = "LEVEL: %s" %(game.level)
+            text = "Level: %s" %(game.level)
             surface = fr(text, True, (255,255,255))
             self.screen.blit(surface, (10, 10))
             text = "EXP: %s" %(int(round(game.player.exp)))
             surface = fr(text, True, (255,255,255))
             self.screen.blit(surface, (10, 30))
-            text = "ESCAPE PODS: %s" %(game.player.lives)
+            text = "Escape Pods: %s" %(game.player.lives)
             surface = fr(text, True, (255,255,255))
             self.screen.blit(surface, (10, 50))
-            text = "ARMOR"
+            text = game.player.getHitPercentage()
+            surface = fr(text, True, (255,255,255))
+            self.screen.blit(surface, (10, 70))
+            text = "Armor: %s/%s" % (game.player.armor["T"], game.player.armor["M"])
             surface = fr(text, True, (255,255,255))
             self.screen.blit(surface, (10, self.screensize[1]-50))
-            text = "MISSILES: %s" %(self.player.missiles)
+            text = "Missiles: %s" %(self.player.missiles)
             surface = fr(text, True, (255,255,255))
             self.screen.blit(surface, (self.screensize[0]-150, 10))
-            text = "REPAIR DRONES: %s" %(self.player.wrenches)
+            text = "Repair Drones: %s" %(self.player.wrenches)
             surface = fr(text, True, (255,255,255))
             self.screen.blit(surface, (self.screensize[0]-150, 30))
-            text = "NUKES: %s" %(game.player.nukes)
+            text = "Nukes: %s" %(game.player.nukes)
             surface = fr(text, True, (255,255,255))
             self.screen.blit(surface, (self.screensize[0]-150, 50))
             if self.player.missile:
@@ -274,7 +290,8 @@ class Game:
 
     def run (self):
 
-        #self.openingScene()
+        #self.notify["msg"] = self.med_font.render("Pew Pew Space", True, (255,255,255))
+        self.openingScene()
 
         sfx.play_music()
         collide = pygame.sprite.groupcollide

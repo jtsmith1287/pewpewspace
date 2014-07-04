@@ -50,6 +50,7 @@ class SpaceShip(pygame.sprite.Sprite):
                       }
         self.damage = 1
         self.damage_res = 1 # Percent of damage taken. 0.5 == 50%, 1 == 100%
+        self.shots_hit = [0.0, 0.0]
         self.reload_time = self.reload_speed
         self.laser_speed = 550
         self.points_until_nuke = 1000
@@ -83,25 +84,30 @@ class SpaceShip(pygame.sprite.Sprite):
     def shoot (self):
 
         if self.is_dead: return
-        sfx.blastershot.play()
         if self.guns == 1 or self.guns == 3:
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage)
+            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = self.rect.midtop
+            sfx.blastershot.play()
+            self.shots_hit[0] += 1
         elif self.guns == 2:
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage)
+            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = (self.rect.left, self.rect.top+10)
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage)
+            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = (self.rect.right, self.rect.top+10)
+            sfx.blastershot.play()
+            self.shots_hit[0] += 2
         if self.guns == 3:
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage)
+            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = (self.rect.left, self.rect.top+10)
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage)
+            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = (self.rect.right, self.rect.top+10)
+            sfx.blastershot.play()
+            self.shots_hit[0] += 1
 
     def reviveCheck (self):
 
@@ -168,6 +174,15 @@ class SpaceShip(pygame.sprite.Sprite):
         except TypeError:
             pass
 
+    def getHitPercentage(self):
+        
+        string = "Accuracy: %s%%"
+        if self.shots_hit[1]:
+            percent = self.shots_hit[1] / self.shots_hit[0]
+            return string % round(percent * 100, 2)
+        else:
+            return string % 0.0
+
     def update (self, time_passed):
 
         tp = time_passed
@@ -229,9 +244,11 @@ class SpaceShip(pygame.sprite.Sprite):
         if self.wrenches > 0 and self.armor["T"] < self.armor["M"]:
             self.armor["T"] += 1
             self.wrenches -= 1
+            sfx.AI_repair.play()
             sfx.repair.play()
         if self.armor["T"] > self.armor["M"]:
             self.armor["T"] = self.armor["M"]
+            sfx.AI_status.play
 
     def revive (self):
 
@@ -330,7 +347,7 @@ class Fireball (pygame.sprite.Sprite):
 
     container = pygame.sprite.Group()
 
-    def __init__ (self, image, speed, damage=1):
+    def __init__ (self, image, speed, damage=1, player=None):
         pygame.sprite.Sprite.__init__ (self, self.container)
 
 
@@ -339,6 +356,7 @@ class Fireball (pygame.sprite.Sprite):
         self.radias = ((self.rect.width/2 + self.rect.height/2)/2)
         self.speed = speed
         self.damage = damage
+        self.player = player
 
     def update (self, time_passed):
 
@@ -353,5 +371,7 @@ class Fireball (pygame.sprite.Sprite):
     def explode (self):
 
         Sparks(self.rect.center)
+        if self.player:
+            self.player.shots_hit[1] += 1
 
 

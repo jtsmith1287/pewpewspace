@@ -134,7 +134,7 @@ class HealthBar (pygame.sprite.Sprite):
             #self.rect.left = self.host.rect.left
         else:
             self.rect = Rect(10, self.screen_rect.bottom-30,
-                             150 * health_per, 20)
+                             780 * health_per, 20)
         self.rgb[1] = int(255 * health_per)
         self.rgb[0] = 255 - self.rgb[1]
         self.screen.lock()

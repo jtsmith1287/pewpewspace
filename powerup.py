@@ -19,7 +19,7 @@ class Wrench (PowerUp):
     def effect (self, player):
 
         if player.armor["T"] < player.armor["M"]:
-            if player.armor["T"] == player.armor["M"]:
+            if player.armor["T"] + 1 == player.armor["M"]:
                 sfx.AI_status.play()
             else:
                 sfx.AI_repair.play()
@@ -46,6 +46,7 @@ class Bullet (PowerUp):
 
     def effect (self, player):
 
+        sfx.power_up.play()
         rs = player.bonus["reload_speed"]
         if rs["steps"][1] < rs["steps"][0]:
             rs["steps"][1] += 1

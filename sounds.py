@@ -1,7 +1,6 @@
-import pygame,os
+import pygame, os
 from random import choice
 pygame.mixer.init() # TODO: Catch exceptions for load failures
-pygame.mixer.set_num_channels(50)
 
 class Sfx (object):
 
@@ -12,29 +11,36 @@ class Sfx (object):
         p = self.getOs()
         self.muffled_explosion = self.load_sound(p+"muffled_explosion.wav")
         self.blastershot       = self.load_sound(p+"blastershot.wav")
+        self.enemy_shot        = self.load_sound(p+"enemy_shot.wav")
+        self.warship_shot      = self.load_sound(p+"warship_shot.wav")
         self.boss_shot         = self.load_sound(p+"boss_shot.wav")
         self.missile_launch    = self.load_sound(p+"missile_launch.wav")
         self.repair            = self.load_sound(p+"repair.wav")
+        self.power_up          = self.load_sound(p+"power_up.wav")
         self.epic_nuke         = self.load_sound(p+"epic_nuke.wav")
 
-        # Dialogue
+        # Dialogue    
         self.AI_greeting = self.load_sound(p+"AI_greeting.wav")
         self.AI_mission = self.load_sound(p+"AI_mission.wav")
         self.AI_missile = self.load_sound(p+"AI_missile.wav")
         self.AI_nuke = self.load_sound(p+"AI_nuke.wav")
-        self.AI_status = self.load_sound(p+"AI_repair.wav")
-        self.AI_repair = self.load_sound(p+"AI_status.wav")
+        self.AI_status = self.load_sound(p+"AI_status.wav")
+        self.AI_repair = self.load_sound(p+"AI_repair.wav")
         # list of currently playing dialogue to prevent overlap
         self.sounds_playing = []
 
         # Misc
         self.stab = self.load_sound(p+"stab.wav")
+        self.success = self.load_sound(p+"success.wav")
+        self.button_down_press = self.load_sound(p+"button_down_press.wav")
 
         # Music
         self.music = ["theme.mp3"]
         self.combat_music = self.load_music(p+choice(self.music))
 
         self.setDefaultVolume()
+        
+        print pygame.mixer.get_init()
 
     def getOs (self):
 
