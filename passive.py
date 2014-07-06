@@ -97,6 +97,8 @@ class Nuke (Passive):
             self.kill()
             self.nuker.nuking = False
             for enemy in self.enemies:
+                if type(enemy).__name__ == "Guard":
+                    self.boss.guard_out -= 1
                 enemy.die(sfx.muffled_explosion)
             if self.boss:
                 if self.boss.decreaseHealth(self.nuker.nuke_damage):
@@ -106,6 +108,44 @@ class Nuke (Passive):
         self.image = pygame.transform.scale(self.image,
                                 (int(self.rect.width*1.015), int(self.rect.height*1.015)))
         self.growth += 1
+
+
+class BossShield(Passive):
+    
+    def __init__(self, host):
+        pygame.sprite.Sprite.__init__ (self, Passive.container)
+        
+        self.host = host
+        self.image = BOSS_SHIELD
+        self.rect = self.image.get_rect()
+        self.rect.center = self.host.rect.center
+    
+    def update(self, time_passed):
+        
+        if hasattr(self.host, "invincible"):
+            if self.host.invincible:
+                self.rect.center = self.host.rect.center
+            else:
+                self.kill()
+                del self
+
+
+class PowerUpGlow(Passive):
+    
+    def __init__(self, host):
+        pygame.sprite.Sprite.__init__(self, Passive.container)
+        
+        self.host = host
+        self.image = POWERUP_GLOW
+        self.rect = self.image.get_rect()
+        self.rect.center = self.host.rect.center
+        
+    def update(self, time_passed):
+        
+        if self.host.alive():
+            self.rect.center = self.host.rect.center
+        else:
+            self.kill()
 
 
 class HealthBar (pygame.sprite.Sprite):
@@ -134,7 +174,7 @@ class HealthBar (pygame.sprite.Sprite):
             #self.rect.left = self.host.rect.left
         else:
             self.rect = Rect(10, self.screen_rect.bottom-30,
-                             780 * health_per, 20)
+                             100 * health_per, 20)
         self.rgb[1] = int(255 * health_per)
         self.rgb[0] = 255 - self.rgb[1]
         self.screen.lock()

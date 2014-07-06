@@ -39,8 +39,11 @@ class SpaceShip(pygame.sprite.Sprite):
         self.reload_speed = 17.0
         self.armor = {"T": 3, "M": 3} # T = Total, M = Max
         self.guns = 1
+        self.base_guns = 1
         self.bonus = {"reload_speed": {
-                        "steps": [2,0], "boost": 4, "duration": [60*15, 0]},
+                          "steps": [2,0], "boost": 4, "duration": [60*10, 0]},
+                      "gun_upgrade" : {
+                          "duration": [60*15, -1]},
                       }
         self.ranks = {"remaining": 0,
                       "hammer": 0,
@@ -48,6 +51,8 @@ class SpaceShip(pygame.sprite.Sprite):
                       "scorpion": 0,
                       "forge": 0,
                       }
+        self.regeneration = {"amount": 0,
+                             "timer": [60 * 15, 0]}
         self.damage = 1
         self.damage_res = 1 # Percent of damage taken. 0.5 == 50%, 1 == 100%
         self.shots_hit = [0.0, 0.0]
@@ -83,31 +88,66 @@ class SpaceShip(pygame.sprite.Sprite):
 
     def shoot (self):
 
+        if self.guns == 1:
+            laser_image = LASER_IMAGE
+        elif self.guns == 2:
+            laser_image = LASER_IMAGE_2
+        elif self.guns == 3:
+            laser_image = LASER_IMAGE_3
+        elif self.guns == 4:
+            laser_image = LASER_IMAGE_4
+        elif self.guns == 5:
+            laser_image = LASER_IMAGE_5
+        else:
+            laser_image = LASER_IMAGE
         if self.is_dead: return
-        if self.guns == 1 or self.guns == 3:
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
+        sfx.blastershot.play()
+        if self.guns in (1, 3, 4, 5):
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = self.rect.midtop
-            sfx.blastershot.play()
             self.shots_hit[0] += 1
         elif self.guns == 2:
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = (self.rect.left, self.rect.top+10)
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = (self.rect.right, self.rect.top+10)
-            sfx.blastershot.play()
             self.shots_hit[0] += 2
-        if self.guns == 3:
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
+        if self.guns in (3, 4, 5):
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = (self.rect.left, self.rect.top+10)
-            bullet = Fireball(LASER_IMAGE, self.laser_speed, self.damage, player=self)
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
             bullet.angle = math.pi # Straight up... dawg!
             bullet.rect.center = (self.rect.right, self.rect.top+10)
-            sfx.blastershot.play()
-            self.shots_hit[0] += 1
+            self.shots_hit[0] += 2
+        if self.guns in (4, 5):
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
+            bullet.angle = math.pi - 0.35 # Straight up... dawg!
+            bullet.rect.center = (self.rect.left, self.rect.top+15)
+            bullet.image = pygame.transform.rotate(
+                    bullet.image, bullet.angle*(180/math.pi) - 180)
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
+            bullet.angle = math.pi + 0.35# Straight up... dawg!
+            bullet.rect.center = (self.rect.right, self.rect.top+15)
+            bullet.image = pygame.transform.rotate(
+                    bullet.image, bullet.angle*(180/math.pi) - 180)
+            self.shots_hit[0] += 2
+        if self.guns == 5:
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
+            bullet.angle = math.pi + 1.0 # Straight up... dawg!
+            bullet.rect.center = (self.rect.left, self.rect.top+20)
+            bullet.image = pygame.transform.rotate(
+                    bullet.image, bullet.angle*(180/math.pi) - 180)
+            bullet = Fireball(laser_image, self.laser_speed, self.damage, player=self)
+            bullet.angle = math.pi - 1.0# Straight up... dawg!
+            bullet.rect.center = (self.rect.right, self.rect.top+20)
+            bullet.image = pygame.transform.rotate(
+                    bullet.image, bullet.angle*(180/math.pi) - 180)
+            self.shots_hit[0] += 2
+            
 
     def reviveCheck (self):
 
@@ -146,11 +186,6 @@ class SpaceShip(pygame.sprite.Sprite):
         if self.shooting and self.reload_time >= reload_speed:
             self.shoot()
             self.reload_time = 0
-        if rs["steps"][1] > 0:
-            if rs["duration"][1] > 0:
-                rs["duration"][1] -= 1
-            else:
-                rs["steps"][1] = 0
 
     def construction (self, time_passed):
 
@@ -183,6 +218,34 @@ class SpaceShip(pygame.sprite.Sprite):
         else:
             return string % 0.0
 
+    def manageBonuses(self, bonus):
+
+        rs = bonus["reload_speed"]
+        gu = bonus["gun_upgrade"]
+
+        if rs["steps"][1] > 0:
+            if rs["duration"][1] > 0:
+                rs["duration"][1] -= 1
+            else:
+                rs["steps"][1] = 0
+        if gu["duration"][1] >= 0:
+            if gu["duration"][1] > 0:
+                gu["duration"][1] -= 1
+            else:
+                gu["duration"][1] = -1
+                self.guns = self.base_guns
+
+    def regenerateHealth(self):
+        
+        if self.regeneration["amount"]:
+            if self.regeneration["timer"][1] >= self.regeneration["timer"][0]:
+                self.armor["T"] += self.regeneration["amount"]
+                if self.armor["T"] > self.armor["M"]:
+                    self.armor["T"] = self.armor["M"]
+                self.regeneration["timer"][1] = 0
+            else:
+                self.regeneration["timer"][1] += 1
+
     def update (self, time_passed):
 
         tp = time_passed
@@ -195,10 +258,13 @@ class SpaceShip(pygame.sprite.Sprite):
                 self.rect.move_ip(-self.speed*tp, 0)
             if "right" in self.moving and (self.rect.right < self.screen_ref[0]):
                 self.rect.move_ip(self.speed*tp, 0)
+        
         self.shotCheck()
         self.damageCheck()
         self.construction(time_passed)
         self.reviveCheck()
+        self.manageBonuses(self.bonus)
+        self.regenerateHealth()
 
     def missile (self, enemies, boss):
 
@@ -206,8 +272,11 @@ class SpaceShip(pygame.sprite.Sprite):
         drones   = [sprite for sprite in enemies if type(sprite).__name__ == "Drone"]
         bombers  = [sprite for sprite in enemies if type(sprite).__name__ == "Bomber"]
         warships = [sprite for sprite in enemies if type(sprite).__name__ == "Warship"]
+        guards = [sprite for sprite in enemies if type(sprite).__name__ == "Guard"]
         boss     = boss
-        if boss:
+        if guards:
+            target = choice(guards)
+        elif boss:
             target = boss
         elif warships:
             target = choice(warships)
@@ -217,7 +286,7 @@ class SpaceShip(pygame.sprite.Sprite):
             target = choice(drones)
         else:
             target = None
-        missile = Missile(target, self.missile_speed, self.missile_damage)
+        missile = Missile(target, self.missile_speed, self.missile_damage + self.level)
         missile.optional_targets = (boss, warships, bombers, drones)
         missile.rect.center = self.rect.center
         self.missiles -= 1

@@ -1,6 +1,7 @@
 import pygame, os
 from random import choice
 pygame.mixer.init() # TODO: Catch exceptions for load failures
+pygame.mixer.set_num_channels(100)
 
 class Sfx (object):
 
@@ -18,6 +19,7 @@ class Sfx (object):
         self.repair            = self.load_sound(p+"repair.wav")
         self.power_up          = self.load_sound(p+"power_up.wav")
         self.epic_nuke         = self.load_sound(p+"epic_nuke.wav")
+        self.guard_spawn       = self.load_sound(p+"guard_spawn.wav")
 
         # Dialogue    
         self.AI_greeting = self.load_sound(p+"AI_greeting.wav")
@@ -37,10 +39,6 @@ class Sfx (object):
         # Music
         self.music = ["theme.mp3"]
         self.combat_music = self.load_music(p+choice(self.music))
-
-        self.setDefaultVolume()
-        
-        print pygame.mixer.get_init()
 
     def getOs (self):
 
@@ -93,5 +91,6 @@ class Sfx (object):
     def play_music (self):
 
         pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.5)
 
 sfx = Sfx()

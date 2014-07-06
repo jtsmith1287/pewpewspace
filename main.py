@@ -14,9 +14,9 @@ from pygame.locals import *
 
 from random import choice
 from spaceship import SpaceShip,Fireball,Missile
-from passive import ScrollingBackground,Passive,Background,HealthBar
+from passive import ScrollingBackground,Passive,Background,HealthBar,PowerUpGlow
 from enemy import Drone,Enemy,EnemyFireball,Boss,Warship,Bomber
-from powerup import PowerUp,Wrench,Bullet,MissileReload
+from powerup import PowerUp,Wrench,Bullet,MissileReload,GunUpgrade
 from animation import Animation
 from sounds import sfx
 
@@ -34,18 +34,19 @@ class Game:
 
         self.screensize   = self.assembleImages()
         self.screen       = pygame.display.set_mode(self.screensize, 0, 32)
+        self.volume       = 0.5
         self.player       = SpaceShip(self.screensize)
         HealthBar(self.player, self.screen, True)
         self.clock        = pygame.time.Clock()
         self.level        = 1
         self.boss         = None
-        self.font         = pygame.font.Font("GearsOfPeace.ttf", 10)
-        self.med_font     = pygame.font.Font("GearsOfPeace.ttf", 40)
-        self.big_font     = pygame.font.Font("GearsOfPeace.ttf", 60)
+        self.font         = pygame.font.Font("GearsOfPeace.ttf", 12)
+        self.med_font     = pygame.font.Font("GearsOfPeace.ttf", 30)
+        self.big_font     = pygame.font.Font("GearsOfPeace.ttf", 50)
         self.notify       = {"msg": None, "timer": [60*3, 0]}
         self.spawner      = {"max_enemies": 2,
                              "enemy_killed": 0,
-                             "spawn_delay": (60 * 1.0),
+                             "spawn_delay": (60 * 2.2),
                              "spawn_counter": 0,
                              "boss_out": False,}
         self.running = True
@@ -54,7 +55,7 @@ class Game:
 
         to_play = [sfx.AI_greeting, sfx.AI_mission]
         running = True
-        for sound in to_play:
+        for index, sound in enumerate(to_play):
             sound.play()
             while running:
                 self.time_passed = self.clock.tick(60)/1000.0
@@ -69,8 +70,26 @@ class Game:
                         running = False
                         sound.stop()
                         return
-
+                
                 self.manageSprite(Background.container)
+                text = "SPACEBAR = FIRE ZE LASERS"
+                surface = self.font.render(text, True, (255,255,255))
+                self.screen.blit(surface, (self.screensize[0]/2-120, 250))
+                text = "M = FIRE A MISSILE"
+                surface = self.font.render(text, True, (255,255,255))
+                self.screen.blit(surface, (self.screensize[0]/2-120, 280))
+                text = "N = LAUNCH NUCLEAR WARHEAD"
+                surface = self.font.render(text, True, (255,255,255))
+                self.screen.blit(surface, (self.screensize[0]/2-120, 310))
+                text = "E = EMP (Scorpion Upgrade Line)"
+                surface = self.font.render(text, True, (255,255,255))
+                self.screen.blit(surface, (self.screensize[0]/2-120, 340))
+                text = "R = Repair (Collect Wrenches)"
+                surface = self.font.render(text, True, (255,255,255))
+                self.screen.blit(surface, (self.screensize[0]/2-120, 370))
+                text = "PRESS Esc TO SKIP INTRO"
+                surface = self.med_font.render(text, True, (255,255,255))
+                self.screen.blit(surface, (self.screensize[0]/2-250, 450))
                 self.manageSprite(self.player.container)
                 pygame.display.flip()
 
@@ -82,10 +101,15 @@ class Game:
         backgroundTL = ScrollingBackground(image_path)
         backgroundBL = ScrollingBackground(image_path)
         backgroundTL.rect.bottom = backgroundBL.rect.top
+        width = backgroundTL.rect.width
+        height = backgroundTL.rect.height
 
         global screenrect
         screenrect = Rect(0,0,backgroundTL.rect.width,backgroundTL.rect.height)
-        return (backgroundTL.rect.width, backgroundTL.rect.height)
+        display = pygame.display.Info()
+        if display.current_h < 1000:
+            height = display.current_h 
+        return (width, height)
 
     def manageSprite (self, container):
 
@@ -108,8 +132,8 @@ class Game:
                 else:
                     enemy = Drone(self.screensize, self.player, self.level)
                 if self.level > 10:
-                    enemy.armor["T"] *= 3
-                    enemy.armor["M"] *= 3
+                    enemy.armor["T"] *= 2
+                    enemy.armor["M"] *= 2
                 HealthBar(enemy, self.screen)
                 spwn["spawn_counter"] = 0
         else:
@@ -117,9 +141,9 @@ class Game:
                 spwn["spawn_counter"] += 1
 
         if spwn["enemy_killed"] >= spwn["max_enemies"]+(
-                                5+self.level*3) and (spwn["boss_out"] == False):
+                5+self.level*3) and (spwn["boss_out"] == False):
             sfx.stab.play()
-            self.boss = Boss(self.player.exp, self.level)
+            self.boss = Boss(self.screensize, self.player, self.level)
             self.boss.rect.midbottom = (self.screensize[0]/2, 0)
             spwn["enemy_killed"] = 0
             spwn["boss_out"] = True
@@ -136,21 +160,33 @@ class Game:
         for proj in projectiles:
             proj.explode()
             if enemy.decreaseHealth(proj.damage) <= 0:
+                if type(enemy).__name__ == "Guard":
+                    self.boss.guards_out -= 1
+                    self.player.exp += enemy.armor["M"]
+                    enemy.die(sfx.muffled_explosion)
+                    return
                 self.spawner["enemy_killed"] += 1
                 if type(enemy).__name__ == "Drone":
                     self.player.exp += enemy.armor["M"]+1
                 else:
                     self.player.exp += enemy.armor["M"]
                 chance = randint(1,13)
-                if chance == 1:
+                if chance in [12, 13]:
                     new_powerup = Wrench()
                     new_powerup.rect.center = enemy.rect.center
+                    PowerUpGlow(new_powerup)
                 elif chance == 2:
                     new_powerup = Bullet()
                     new_powerup.rect.center = enemy.rect.center
+                    PowerUpGlow(new_powerup)
                 elif chance == 3:
                     new_powerup = MissileReload()
                     new_powerup.rect.center = enemy.rect.center
+                    PowerUpGlow(new_powerup)
+                elif chance == 4:
+                    new_powerup = GunUpgrade()
+                    new_powerup.rect.center = enemy.rect.center
+                    PowerUpGlow(new_powerup)
                 enemy.die(sfx.muffled_explosion)
                 break
 
@@ -164,30 +200,34 @@ class Game:
         # Check if an enemy has shot the player
         boom = collide(EnemyFireball.container, self.player.container, True, False)
         if boom:
-            if self.player.decreaseHealth(1) < 0:
+            if self.player.decreaseHealth(1) <= 0:
                 self.player.die()
         # Check if the player crashed into an enemy
-        bang = collide(Enemy.container, self.player.container, True, False)
+        bang = collide(Enemy.container, self.player.container, False, False)
         if bang:
             for enemy in bang:
-                enemy.decreaseHealth(self.player.armor["M"])
-                if self.player.decreaseHealth(enemy.armor["M"]) <= 0:
+                e_armor = enemy.armor["T"]
+                if type(enemy).__name__ == "Guard":
+                    self.boss.guards_out -= 1
+                enemy.die(sfx.muffled_explosion)
+                if self.player.decreaseHealth(e_armor) <= 0:
                     self.player.die()
         # Check if the player has shot a boss
         bash = collide(Fireball.container, Boss.container, True, False)
         if bash:
             for projectile in bash:
-                if self.boss.decreaseHealth(projectile.damage) <= 0:
-                    self.spawner["boss_out"] = False
-                    self.player.exp += self.boss.armor["M"]
-                    self.level += 1
-                    self.boss.die(sfx.muffled_explosion)
-                    self.boss = None
-                    self.player.ranks["remaining"] += 1
-                    text = "New Upgrades!"
-                    self.notify["msg"] = self.med_font.render(text, True, (255,255,255))
-                    break
-                projectile.explode()
+                if not self.boss.invincible:
+                    if self.boss.decreaseHealth(projectile.damage) <= 0:
+                        self.spawner["boss_out"] = False
+                        self.player.exp += self.boss.armor["M"]
+                        self.level += 1
+                        self.boss.die(sfx.muffled_explosion)
+                        self.boss = None
+                        self.player.ranks["remaining"] += 1
+                        text = "New Upgrades! (Press ESC)"
+                        self.notify["msg"] = self.med_font.render(text, True, (255,255,255))
+                        break
+                    projectile.explode()
         # Check if the player has grabbed a PowerUp
         ding = collide(PowerUp.container, self.player.container, True, False)
         if ding:
@@ -222,21 +262,21 @@ class Game:
             self.screen.blit(surface, (10, self.screensize[1]-50))
             text = "Missiles: %s" %(self.player.missiles)
             surface = fr(text, True, (255,255,255))
-            self.screen.blit(surface, (self.screensize[0]-150, 10))
+            self.screen.blit(surface, (self.screensize[0]-180, 10))
             text = "Repair Drones: %s" %(self.player.wrenches)
             surface = fr(text, True, (255,255,255))
-            self.screen.blit(surface, (self.screensize[0]-150, 30))
+            self.screen.blit(surface, (self.screensize[0]-180, 30))
             text = "Nukes: %s" %(game.player.nukes)
             surface = fr(text, True, (255,255,255))
-            self.screen.blit(surface, (self.screensize[0]-150, 50))
+            self.screen.blit(surface, (self.screensize[0]-180, 50))
             if self.player.missile:
                 text = "NEXT MISSILE: 0:%s" %(round(game.player.missile_timer[1],1))
                 surface = fr(text, True, (255,255,255))
-                self.screen.blit(surface, (self.screensize[0]-150, 70))
+                self.screen.blit(surface, (self.screensize[0]-180, 70))
             if self.player.emp:
                 text = "NEXT EMP: 0:%s" %(round(game.player.emp["timer"][1],1))
                 surface = fr(text, True, (255,255,255))
-                self.screen.blit(surface, (self.screensize[0]-150, 90))
+                self.screen.blit(surface, (self.screensize[0]-180, 90))
 
 
     def displayNotifications (self):
@@ -276,6 +316,16 @@ class Game:
                 self.player.nuke(self.screen, Enemy.container, self.boss)
             if event.key == K_r:
                 self.player.repair()
+            if event.key == K_EQUALS:
+                self.volume += 0.1
+                if self.volume > 1:
+                    self.volume = 1.0
+                pygame.mixer.music.set_volume(self.volume)
+            if event.key == K_MINUS:
+                self.volume -= 0.1
+                if self.volume < 0:
+                    self.volume = 0.0
+                pygame.mixer.music.set_volume(self.volume)
         if event.type == KEYUP:
             if event.key == K_SPACE:
                 self.player.shooting = False

@@ -15,8 +15,8 @@ from sounds import sfx
 class Menu (pygame.sprite.Sprite):
 
     container = pygame.sprite.Group()
-    font = pygame.font.Font("GearsOfPeace.ttf", 20)
-    sfont = pygame.font.Font("GearsOfPeace.ttf", 10)
+    font = pygame.font.Font("EA Sports Covers SC 1.5.ttf", 20)
+    sfont = pygame.font.Font("EA Sports Covers SC 1.5.ttf", 10)
 
     def __init__ (self):
         pygame.sprite.Sprite.__init__ (self, self.container)
@@ -312,22 +312,15 @@ class HammerButton (Button):
         if ranks["remaining"] > 0 and ranks["hammer"] < 16:
             sfx.success.play()
             if current_rank_line == 0:            # Armor Plating Increase
-                player.damage_res -= 0.1
-                if (8 - ranks["hammer"]) < 2:
-                    player.damage_res -= 0.1
+                player.damage_res -= 0.13
             elif current_rank_line == 1:          # Missile Damage Increase
-                player.missile_damage += 2
-                if (8 - ranks["hammer"]) < 2:
-                    player.missile_damage = 30
+                player.missile_damage += 7
             elif current_rank_line == 2:          # Nuke construction speed
-                player.points_until_nuke *= 0.9
+                player.points_until_nuke *= 0.75
             elif current_rank_line == 3:          # Nuke damage
-                player.nuke_damage += 50
+                player.nuke_damage += 100
             ranks["remaining"] -= 1
             ranks["hammer"] += 1
-
-        print ("DR %s\n"
-                "M. Damage %s\n" %(player.damage_res, player.missile_damage))
 
         # Refresh the menu
         self.menu.widgets = pygame.sprite.Group()
@@ -348,24 +341,17 @@ class SabreButton (Button):
         if ranks["remaining"] > 0 and ranks["sabre"] < 11:
             sfx.success.play()
             if current_rank_line == 0:         # Reload Speed
-                player.reload_speed -= 1
+                player.reload_speed -= 2
             elif current_rank_line == 1:       # Player Speed
-                player.speed += 10
-            elif current_rank_line == 2:       # Laser Speed
-                player.laser_speed += 200
-            elif current_rank_line == 3:       # Gun count  
+                player.speed += 13
+            elif current_rank_line == 2:       # Gun count  
                 player.guns += 1
+                player.base_guns += 1
+            elif current_rank_line == 3:       # Laser Speed
+                player.laser_speed += 200
 
             ranks["remaining"] -= 1
             ranks["sabre"] += 1
-
-        print ("Reload %s\n"
-                "Speed %s\n"
-                "Laser Speed %s"
-                "Gun count %s\n" %(player.reload_speed,
-                                   player.speed,
-                                   player.laser_speed,
-                                   player.guns))
 
         # Refresh the menu
         self.menu.widgets = pygame.sprite.Group()
@@ -400,10 +386,6 @@ class ScorpionButton (Button):
             ranks["remaining"] -= 1
             ranks["scorpion"] += 1
 
-        print ("Damage %s\n"
-                "Missile Speed %s\n"
-                 %(player.damage, player.missile_speed))
-
         # Refresh the menu
         self.menu.widgets = pygame.sprite.Group()
         self.menu.text = pygame.sprite.RenderPlain()
@@ -418,7 +400,7 @@ class ForgeButton (Button):
 
         player = Menu.game.player
         ranks = player.ranks
-        current_rank_line = ranks["forge"] % 2
+        current_rank_line = ranks["forge"] % 3
         if ranks["remaining"] > 0 and ranks["forge"] < 8:
             sfx.success.play()
             if current_rank_line == 0:          # Missile reload timer
@@ -426,7 +408,10 @@ class ForgeButton (Button):
                     player.missile_timer[0] = 15
                 else:
                     player.missile_timer[0] -= 10
-            elif current_rank_line == 1:
+            elif current_rank_line == 1:       # Regen stuff
+                player.regeneration["amount"] += 0.2
+                player.regeneration["timer"][0] -= 2
+            elif current_rank_line == 2:       # Increase armor
                 player.armor["M"] += 1
                 player.armor["T"] += 1
                 
@@ -438,54 +423,58 @@ class ForgeButton (Button):
         self.menu.text = pygame.sprite.RenderPlain()
         self.menu.drawWidgets()
 
-RANK_DESC = {"hammer": ["Increase armor plating to 110%",
-                        "Missile damage to 120%",
-                        "Nuke construction speed down 10%",
-                        "Nuke damage at 150%",
-                        "Increase armor plating to 120%",
-                        "Missile damage to 140%",
-                        "Nuke construction speed down 18%",
-                        "Nuke damage at 200%",
-                        "Increase armor plating to 130%",
-                        "Missile damage to 160%",
-                        "Nuke construction speed down 26%",
-                        "Nuke damage at 250%",
-                        "Increase armor plating to 150%",
-                        "Missile damage to 300%",
-                        "Nuke construction speed down 35%",
-                        "Nuke damage at 300%",
+RANK_DESC = {"hammer": ["Increase armor plating slightly",
+                        "Missile damage increased significantly",
+                        "Nuke construction speed increased moderately",
+                        "Nuke damage increased significantly",
+                        "Increase armor plating slightly",
+                        "Missile damage increased significantly",
+                        "Nuke construction speed increased moderately",
+                        "Nuke damage increased significantly",
+                        "Increase armor plating slightly",
+                        "Missile damage increased significantly",
+                        "Nuke construction speed increased moderately",
+                        "Nuke damage increased moderately",
+                        "Increase armor plating to slightly",
+                        "Missile damage increased significantly",
+                        "Nuke construction speed increased moderately",
+                        "Nuke damage increased significantly",
                         "Upgrade line at maximum!"],
-             "sabre": ["Reload speed efficiency to 5%",
-                       "Movement speed to 106%",
-                       "Laser velocity to 127%",
+             "sabre": ["Reload efficiency increased moderately",
+                       "Movement speed increased slightly",
                        "Install additional laser",
-                       "Reload speed efficiency to 12%",
-                       "Movement speed to 111%",
-                       "Laser velocity to 143%",
+                       "Laser velocity increased moderately",
+                       "Reload efficiency increased moderately",
+                       "Movement speed increased slightly",
                        "Install third laser",
-                       "Reload speed efficiency to 18%",
-                       "Movement speed to 117%",
-                       "Laser velocity to 153%",
+                       "Laser velocity increased moderately",
+                       "Reload efficiency increased moderately",
+                       "Movement speed increased slightly",
+                       "Laser velocity increased moderately",
                        "Upgrade line at maximum!"],
-            "scorpion": ["Laser damage to 110%",
-                         "Missile speed to 123%",
+            "scorpion": ["Laser damage increased slightly",
                          "Install EMP",
-                         "Laser damage to 120%",
-                         "EMP recharge - Seven second duration",
-                         "Missile speed to 137%",
-                         "Laser damage to 130%",
-                         "EMP recharge - Nine second increased duration",
-                         "Missile speed to 147%",
-                         "Laser damage to 150%",
-                         "EMP recharge - Eleven second increased duration",
-                         "Missile speed to 154%",
+                         "Missile speed increased moderately",
+                         "Laser damage to increased moderately",
+                         "EMP cooldown decreased & 7 second duration",
+                         "Missile speed increased moderately",
+                         "Laser damage increase slightly",
+                         "EMP cooldown decreased - 9 second duration",
+                         "Missile speed increased moderately",
+                         "Laser damage increased slightly",
+                         "EMP cooldown decreased- 11 second duration",
+                         "Missile speed increased moderately",
                          "Upgrade line at maximum!"],
             "forge": ["Missile construction speed to 50 seconds",
+                      "Install: Automated Armor Repair",
                       "+1 Armor",
                       "Missile construction speed to 40 seconds",
+                      "Automated Armor Repair increased significantly",
                       "+1 Armor",
                       "Missile construction speed to 30 seconds",
+                      "Automated Armor Repair increased moderately",
                       "+1 Armor",
                       "Missile construction speed to 15 seconds",
+                      "Automated Armor Repair increased slightly",
                       "+1 Armor",
                       "Upgrade line at maximum!"]}                         

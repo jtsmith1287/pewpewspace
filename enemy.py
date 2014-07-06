@@ -3,6 +3,7 @@ import pygame, math
 from random import randint,uniform,choice
 from spaceship import Fireball
 from animation import Explosion
+from passive import BossShield
 from sounds import sfx
 from animation import Warp
 from images import *
@@ -87,17 +88,22 @@ class Drone (Enemy):
     def bounce (self):
         """ Bounce self if x or y is out of range of the game window. """
 
-        if self.rect.right > 900:
+        if self.rect.right > 850:
             self.angle = - self.angle
-        elif self.rect.left < -100:
+        elif self.rect.left < -50:
             self.angle = - self.angle
-        if self.rect.bottom > 900:
+        if self.rect.bottom > 850:
             self.angle = math.pi - self.angle
-        elif self.rect.top < -100:
+        elif self.rect.top < -50:
             self.angle = math.pi - self.angle
+
+    def varySpeed(self):
+        
+        pass
 
     def update (self, time_passed):
 
+        self.varySpeed()
         if self.disabled: return
         self.move()
         if self.reload_time >= self.reload_speed:
@@ -126,7 +132,7 @@ class Bomber (Enemy):
         diff = (self.destination[0]-self.rect.center[0],
                 self.destination[1]-self.rect.center[1])
         self.angle = math.atan2(diff[0], diff[1])
-        self.reload_speed = [75, 20, 5] #Interval,delay,shots per burst
+        self.reload_speed = [75, 10, 3] #Interval,delay,shots per burst
         self.reload_time = [0, 12, 0]
         self.armor = {"T": 3, "M": 3} # T = Total, M = Max
         self.disabled = False
@@ -173,6 +179,35 @@ class Bomber (Enemy):
         if self.rect.top > self.screen_ref[1]:
             self.kill()
             del self
+
+
+class Guard (Drone):
+    
+    def __init__(self, size, player, level):
+        Drone.__init__(self, size, player, level)
+        
+        self.speed_variance = (400, 500)
+        self.speed_timer = [60, 0]
+        self.armor["M"] = 5
+        self.armor["T"] = 5
+        if level < 10:
+            self.image = BOSS_GUARDIAN
+        else:
+            self.image = BOSS_GUARDIAN_n
+        self.rect = self.image.get_rect()
+        
+    def varySpeed(self):
+        
+        self.speed_timer[1] += 1
+        # Time to change speeds again
+        if self.speed_timer[1] >= self.speed_timer[0]:
+            # Current speed "mode" is normal so we start moving quickly
+            if self.speed <= self.speed_variance[0]:
+                self.speed = randint(self.speed_variance[0], self.speed_variance[1])
+            else:
+                self.speed = randint(150, 250)
+            self.speed_timer[0] = randint(30, 240)
+            self.speed_timer[1] = 0
 
 
 class Warship (Enemy):
@@ -233,7 +268,7 @@ class Boss (Enemy):
 
     container = pygame.sprite.Group()
 
-    def __init__ (self, power, level, image="boss.png"):
+    def __init__ (self, size, player, level):
         pygame.sprite.Sprite.__init__(self, self.container)
 
         if level < 10:
@@ -242,22 +277,36 @@ class Boss (Enemy):
             self.image = BOSS_IMAGE_n
         self.rect  = self.image.get_rect()
         self.direction = 1
+        self.screen_size = size
+        self.player = player
         self.radias = int((self.rect.width/2.3) + (self.rect.height/2.3)/2)
         self.shot_sound = sfx.boss_shot
         self.invincible = False
 
         # Dynamic variables based on power and/or level
-        self.power = power
+        self.power = player.exp
         self.level = level
-        self.speed = 100
+        self.speed = 125
         self.travelled = 0
-        self.max_travel = 200
-        self.directions = {}
+        self.max_travel = 300
+        self.directions = {"downright": (1, 1),
+                           "right": (1, 0),
+                           "backright": (-1, 0),
+                           "left": (-1, 0),
+                           "backleft": (1, 0),
+                           "downleft": (-1, 1),
+                           "down": (0, 1),
+                           "backdownright": (-1, -1),
+                           "backdownleft": (1, -1),
+                           "backdown": (0, -1)}
         self.moving = None
         self.disabled = False
+        self.guards_out = 0
+        self.guards_spawned = False
+        if self.level % 2 == 1:
+            self.guards_out = -1
 
-        #armor = int((power**3/(power**2/12))/75)
-        armor = int(5+(self.level*2)+(power/5)) + 10
+        armor = int((self.level*1.8)+(self.power/12)) + 50
         self.armor = {"T": armor, "M": armor} # T = Total, M = Max
 
     def shoot (self, shots, time_passed):
@@ -266,7 +315,7 @@ class Boss (Enemy):
         angle = 0
         step = (math.pi*2)/shots
         for i in xrange(shots):
-            bullet = Fireball(FIREBALL_IMAGE, 350)
+            bullet = Fireball(BOSS_BULLET_IMAGE, 350)
             bullet.angle = angle + (uniform(-.25,.25))
             bullet.pos = ((math.sin(bullet.angle) * bullet.speed) * time_passed,
                           (math.cos(bullet.angle) * bullet.speed) * time_passed)
@@ -275,24 +324,43 @@ class Boss (Enemy):
             bullet.rect.center = (self.rect.center[0], self.rect.center[1]+40)
             angle += step
 
+    def spawnGuards(self):
+        
+        if self.guards_out != -1 and not self.guards_spawned:
+            sfx.guard_spawn.play()
+            BossShield(self)
+            self.guards_spawned = True
+            self.invincible = True
+            self.guards_out = 2 + int(self.level/2.0)
+            positions = [int(self.screen_size[0]/self.guards_out) * i \
+                         for i in range(self.guards_out + 1)][1:]
+            for pos in range(self.guards_out):
+                guard = Guard(self.screen_size, self.player, self.level)
+                guard.rect.center = (positions[pos], 400)
+            # Offset guards by one so last kill drops count to -1 instead of 0.
+            # This prevents guards from being spawned more than once.
+            self.guards_out -= 1
+            
     def update (self, time_passed):
 
         if self.disabled: return
 
-        if self.rect.bottom < 250:
+        # Move boss into position
+        if self.rect.bottom < 300:
             self.rect.move_ip(0, int(self.speed*time_passed))
-        else:
-            if self.invincible:
-                self.invincible = False
+            return
+        # If less than 20%, spawn guardians
+        if float(self.armor["T"]) / float(self.armor["M"]) < 0.20:
+            self.spawnGuards()
+        # Guards are not present -- boss acts normally
+        if (self.guards_spawned and self.guards_out <= -1) or (
+            not self.guards_spawned):
+            # Calculate chances to move and shoot
             chance = randint(1, 100-(self.level*2))
             if chance == 7:
-                self.shoot(randint(5,(15+self.level)), time_passed)
-            if chance < 5 and self.moving == None:
-                self.directions.update({"right":     (1, 1),
-                                        "left":      (-1, 1),
-                                        "backright": (-1, -1),
-                                        "backleft":  (1, -1)})
-                self.moving = choice(["right", "left"])
+                self.shoot(randint(self.level + 2,(self.level+10)), time_passed)
+            if chance < 6 and self.moving == None:
+                self.moving = choice(["right", "left", "downright", "downleft", "down"])
             if self.moving:
                 self.travelled += self.speed * time_passed
                 if self.travelled < self.max_travel:
@@ -306,5 +374,8 @@ class Boss (Enemy):
                     else:
                         self.travelled = 0
                         self.moving = None
+            # Reset invincibility.
+            if self.invincible:
+                self.invincible = False
 
 
